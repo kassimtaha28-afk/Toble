@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiTitleRouteImport } from './routes/api/title'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTitleRoute = ApiTitleRouteImport.update({
+  id: '/api/title',
+  path: '/api/title',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/title': typeof ApiTitleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/title': typeof ApiTitleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/title': typeof ApiTitleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/privacy' | '/settings' | '/api/chat'
+  fullPaths: '/' | '/privacy' | '/settings' | '/api/chat' | '/api/title'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/privacy' | '/settings' | '/api/chat'
-  id: '__root__' | '/' | '/privacy' | '/settings' | '/api/chat'
+  to: '/' | '/privacy' | '/settings' | '/api/chat' | '/api/title'
+  id: '__root__' | '/' | '/privacy' | '/settings' | '/api/chat' | '/api/title'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SettingsRoute: typeof SettingsRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiTitleRoute: typeof ApiTitleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/title': {
+      id: '/api/title'
+      path: '/api/title'
+      fullPath: '/api/title'
+      preLoaderRoute: typeof ApiTitleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SettingsRoute: SettingsRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiTitleRoute: ApiTitleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
