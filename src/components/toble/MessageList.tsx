@@ -23,7 +23,7 @@ function CopyButton({ text }: { text: string }) {
 export function MessageList({
   messages, busy, waiting, error, onRegenerate, onRetry,
 }: {
-  messages: UIMessage[]; busy: boolean; waiting: boolean; error?: string;
+  messages: UIMessage[]; busy: boolean; waiting: boolean; error?: string | undefined;
   onRegenerate: () => void; onRetry: () => void;
 }) {
   return (

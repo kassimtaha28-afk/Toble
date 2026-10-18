@@ -37,7 +37,7 @@ export async function handleChat(request: Request) {
     const text = m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
     if (m.role === "user" && text.length > MAX_CHARS) return jsonError(400, `Messages can be at most ${MAX_CHARS} characters.`);
   }
-  const last = ui[ui.length - 1];
+  const last = ui[ui.length - 1]!;
   const lastText = last.parts.map((p) => (p.type === "text" ? p.text : "")).join("").trim();
   if (last.role !== "user" || !lastText) return jsonError(400, "Please type a message first.");
 
