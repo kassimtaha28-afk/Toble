@@ -20,6 +20,8 @@ function jsonError(status: number, message: string) {
 export async function handleChat(request: Request) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return jsonError(500, "Toble's AI service isn't configured yet.");
+  const limited = await checkRateLimit(request, "chat");
+  if (limited) return limited;
 
   let body: unknown;
   try {
@@ -75,6 +77,76 @@ export async function handleChat(request: Request) {
     }),
     runIdFetch,
   );
+}
+
+export async function handleTitle(request: Request) {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey) return jsonError(500, "AI service isn't configured.");
+  const limited = await checkRateLimit(request, "title");
+  if (limited) return limited;
+  let text = "";
+  try {
+    text = String(((await request.json()) as { text?: unknown })?.text ?? "").slice(0, 2000).trim();
+  } catch {}
+  if (!text) return jsonError(400, "Missing text.");
+  const provider = createOpenAI({
+    baseURL: "https://ai.gateway.lovable.dev/v1",
+    apiKey,
+    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
+    fetch: createLovableAiGatewayRunIdFetch().fetch,
+  });
+  try {
+    const result = streamText({
+      model: provider.responses(process.env["TOBLE_TITLE_MODEL"] || "openai/chat-latest"),
+      instructions: "Write a short title (2-6 words) for a chat that starts with the user's message below. Reply with the title only, no quotes or trailing punctuation.",
+      messages: [{ role: "user", content: text }],
+      abortSignal: request.signal,
+      maxRetries: 1,
+      providerOptions: { openai: { store: false } },
+    });
+    const title = (await result.text).replace(/^["'\s]+|["'.\s]+$/g, "").slice(0, 80);
+    return Response.json({ title: title || "New chat" });
+  } catch (err) {
+    return jsonError(502, friendlyError(err));
+  }
+}
+
+const LIMITS = { chat: { user: 60, guest: 15 }, title: { user: 60, guest: 15 } } as const;
+
+async function checkRateLimit(request: Request, kind: keyof typeof LIMITS): Promise<Response | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  let subject: string;
+  let limit: number;
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const { data } = token ? await supabaseAdmin.auth.getUser(token) : { data: { user: null } };
+  if (token && !data.user) return jsonError(401, "Your session has expired. Please sign in again.");
+  if (data.user) {
+    subject = `${kind}:user:${data.user.id}`;
+    limit = LIMITS[kind].user;
+  } else {
+    const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+    subject = `${kind}:guest:${Array.from(new Uint8Array(digest)).slice(0, 12).map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+    limit = LIMITS[kind].guest;
+  }
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabaseAdmin
+    .from("usage_events")
+    .select("id", { count: "exact", head: true })
+    .eq("subject", subject)
+    .gte("created_at", since);
+  if (error) {
+    console.error("rate limit check failed", error);
+    return jsonError(503, "Toble is temporarily unavailable. Please try again shortly.");
+  }
+  if ((count ?? 0) >= limit) {
+    return Response.json(
+      { error: data.user ? "You've reached the hourly message limit. Please try again a little later." : "Guest message limit reached for this hour. Sign in for a higher limit." },
+      { status: 429, headers: { "Retry-After": "600" } },
+    );
+  }
+  await supabaseAdmin.from("usage_events").insert({ subject });
+  return null;
 }
 
 function friendlyError(err: unknown): string {
