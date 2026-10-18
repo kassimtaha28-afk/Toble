@@ -51,7 +51,7 @@ function SettingsPage() {
     e.preventDefault();
     if (!user) return;
     const { error } = await supabase.from("profiles").upsert({ id: user.id, display_name: name.trim().slice(0, 80) || null, updated_at: new Date().toISOString() });
-    if (error) return toast.error("Couldn't save your name.");
+    if (error) { toast.error("Couldn't save your name."); return; }
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
     toast.success("Profile saved");
   };
