@@ -28,6 +28,7 @@ export function ChatView({ id, initialMessages, title }: { id: string; initialMe
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat", headers: authHeaders }), []);
   const { messages, sendMessage, status, stop, error, regenerate, clearError } = useChat({ id, messages: initialMessages, transport });
   const busy = status === "submitted" || status === "streaming";
+  console.log("TOBLE render", id, status, messages.length);
   const last = messages[messages.length - 1];
   const waiting = status === "submitted" || (status === "streaming" && last?.role === "assistant" && !textOf(last));
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,7 @@ export function ChatView({ id, initialMessages, title }: { id: string; initialMe
       const pending = sessionStorage.getItem(pendingKey(id));
       if (pending) {
         sessionStorage.removeItem(pendingKey(id));
-        sendMessage({ text: pending });
+        console.log("TOBLE pending send", pending); sendMessage({ text: pending }).catch((e) => console.error("TOBLE send failed", e));
       }
     }, 0);
     return () => clearTimeout(t);
