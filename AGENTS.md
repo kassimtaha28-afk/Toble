@@ -12,3 +12,4 @@
 ## Project rules
 - Toble UI pieces live in `src/components/toble/`; colors only via tokens in `src/styles.css` so light/dark themes stay consistent.
 - Theme is a `.dark` class on `<html>`, set pre-paint by an inline script in `__root.tsx` from localStorage `toble-theme` — avoids flash on load.
+- AI chat streams via server route `/api/chat` (`src/lib/ai/chat.server.ts`) through Lovable AI Gateway; model comes from env `TOBLE_MODEL` with a code default — keeps the key and model server-side.
