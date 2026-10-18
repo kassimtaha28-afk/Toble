@@ -35,11 +35,14 @@ export function ChatView({ id, initialMessages, title }: { id: string; initialMe
 
   // Send a prompt handed over from the new-chat page (once, StrictMode-safe).
   useEffect(() => {
-    const pending = sessionStorage.getItem(pendingKey(id));
-    if (pending) {
-      sessionStorage.removeItem(pendingKey(id));
-      sendMessage({ text: pending });
-    }
+    const t = setTimeout(() => {
+      const pending = sessionStorage.getItem(pendingKey(id));
+      if (pending) {
+        sessionStorage.removeItem(pendingKey(id));
+        sendMessage({ text: pending });
+      }
+    }, 0);
+    return () => clearTimeout(t);
   }, [id, sendMessage]);
 
   useEffect(() => {
