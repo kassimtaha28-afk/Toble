@@ -33,7 +33,7 @@ function ResetPassword() {
     setError(null);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) return setError(error.message || "This reset link may have expired. Request a new one.");
+    if (error) { setError(error.message || "This reset link may have expired. Request a new one."); return; }
     toast.success("Password updated");
     navigate({ to: "/" });
   };
