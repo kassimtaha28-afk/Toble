@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, Code2, Lightbulb, PenLine } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthModal } from "@/components/AuthModal";
 import { toast } from "sonner";
 import { AppShell } from "@/components/toble/AppShell";
 import { ComposerArea, pendingKey } from "@/components/toble/ChatView";
@@ -33,7 +35,41 @@ function Index() {
   const [starting, setStarting] = useState(false);
   const { store, ready } = useConversationStore();
   const navigate = useNavigate();
+const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [credits, setCredits] = useState<number | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchCredits(session.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchCredits(session.user.id);
+      } else {
+        setCredits(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchCredits = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', userId)
+      .single();
+
+    if (data && !error) {
+      setCredits(data.credits);
+    }
+  };
+
+ 
   const start = async (text = input) => {
     const t = text.trim();
     if (!t || starting || !ready) return;
@@ -50,6 +86,7 @@ function Index() {
 
   return (
     <AppShell>
+    <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center px-4 py-10 text-center animate-fade-up">
           <TobleMark className="size-14" />
